@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>🏛️ Tourism Explorer - Discover Amazing Hotels/Service Apartments/Areas near tourist hubs</title>
+  <title>🏛️ Tourism Explorer - Explore tourism and accomodation</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -275,7 +275,7 @@
               </div>
               <div class="position-relative my-2">
                 <span class="position-absolute" style="left:10px;top:50%;transform:translateY(-50%);opacity:.6">🔎</span>
-                <input id="searchBox2" class="form-control ps-5" placeholder="Search amazing hotels/service apartments/areas worldwide near tourist hubs..." style="border: 2px solid var(--dubai-teal); border-radius: 10px;">
+                <input id="searchBox2" class="form-control ps-5" placeholder="explore tourism and accomodations" style="border: 2px solid var(--dubai-teal); border-radius: 10px;">
               </div>
               <div id="map2" class="mapbox"></div>
 
@@ -509,22 +509,49 @@ def decrypt_key(encrypted_data, passphrase="default_salt_2024"):
     let autocomplete2=null;
     let lastRetailScan=null, lastRetailResults=null;
 
-    // Updated POI types without temple, mosque, church
-    const DEFAULT_POI_TYPES = [
-      {type:'tourist_attraction',label:'Tourist Attractions',priority:'high',color:'#d4af37',emoji:'🏛️'},
-      {type:'museum',label:'Museums',priority:'high',color:'#8b4513',emoji:'🏛️'},
-      {type:'park',label:'Parks & Gardens',priority:'medium',color:'#16a34a',emoji:'🌳'},
-      {type:'zoo',label:'Zoos & Wildlife',priority:'medium',color:'#10b981',emoji:'🦁'},
-      {type:'shopping_mall',label:'Shopping Centers',priority:'medium',color:'#ea580c',emoji:'🛍️'},
-      {type:'restaurant',label:'Restaurants',priority:'high',color:'#16a34a',emoji:'🍽️'},
-      {type:'cafe',label:'Cafés & Tea Houses',priority:'medium',color:'#dc2626',emoji:'☕'},
-      {type:'night_club',label:'Nightlife',priority:'low',color:'#7c3aed',emoji:'🌙'},
-      {type:'spa',label:'Spas & Wellness',priority:'medium',color:'#0ea5e9',emoji:'💆'},
-      {type:'transit_station',label:'Transport Hubs',priority:'high',color:'#f59e0b',emoji:'🚌'},
-      {type:'subway_station',label:'Metro Stations',priority:'high',color:'#14b8a6',emoji:'🚇'},
-      {type:'hospital',label:'Medical Centers',priority:'high',color:'#ef4444',emoji:'🏥'},
-      {type:'bank',label:'Banks & ATMs',priority:'low',color:'#64748b',emoji:'🏦'}
-    ];
+    // Tourism POI types organized by categories
+    const POI_CATEGORIES = {
+      'Tourist Attractions': [
+        {type:'tourist_attraction',label:'Tourist Attractions',priority:'high',color:'#d4af37',emoji:'🏛️'},
+        {type:'museum',label:'Museums',priority:'high',color:'#8b4513',emoji:'🏛️'},
+        {type:'art_gallery',label:'Art Galleries',priority:'high',color:'#9333ea',emoji:'🎨'},
+        {type:'zoo',label:'Zoos & Wildlife',priority:'medium',color:'#10b981',emoji:'🦁'},
+        {type:'aquarium',label:'Aquariums',priority:'medium',color:'#0284c7',emoji:'🐠'},
+        {type:'amusement_park',label:'Theme Parks',priority:'high',color:'#f97316',emoji:'🎢'},
+        {type:'park',label:'Parks & Gardens',priority:'medium',color:'#16a34a',emoji:'🌳'},
+        {type:'beach',label:'Beaches',priority:'high',color:'#0891b2',emoji:'🏖️'}
+      ],
+      'Dining & Food': [
+        {type:'restaurant',label:'Restaurants',priority:'high',color:'#16a34a',emoji:'🍽️'},
+        {type:'cafe',label:'Cafés & Tea Houses',priority:'medium',color:'#dc2626',emoji:'☕'}
+      ],
+      'Entertainment & Nightlife': [
+        {type:'movie_theater',label:'Cinemas',priority:'medium',color:'#7c2d12',emoji:'🎬'},
+        {type:'night_club',label:'Nightlife',priority:'medium',color:'#7c3aed',emoji:'🌙'},
+        {type:'bar',label:'Bars & Pubs',priority:'medium',color:'#b91c1c',emoji:'🍺'},
+        {type:'casino',label:'Casinos',priority:'low',color:'#dc2626',emoji:'🎰'}
+      ],
+      'Shopping & Wellness': [
+        {type:'shopping_mall',label:'Shopping Centers',priority:'medium',color:'#ea580c',emoji:'🛍️'},
+        {type:'jewelry_store',label:'Jewelry Shops',priority:'low',color:'#fbbf24',emoji:'💎'},
+        {type:'clothing_store',label:'Fashion Stores',priority:'medium',color:'#ec4899',emoji:'👗'},
+        {type:'spa',label:'Spas & Wellness',priority:'medium',color:'#0ea5e9',emoji:'💆'}
+      ],
+      'Accommodation & Services': [
+        {type:'lodging',label:'Hotels & Service Apartments',priority:'high',color:'#1e40af',emoji:'🏨'},
+        {type:'hospital',label:'Medical Centers',priority:'high',color:'#ef4444',emoji:'🏥'},
+        {type:'pharmacy',label:'Pharmacies',priority:'medium',color:'#16a34a',emoji:'💊'},
+        {type:'transit_station',label:'Transport Hubs',priority:'high',color:'#f59e0b',emoji:'🚌'},
+        {type:'subway_station',label:'Metro Stations',priority:'high',color:'#14b8a6',emoji:'🚇'},
+        {type:'airport',label:'Airports',priority:'high',color:'#64748b',emoji:'✈️'},
+        {type:'car_rental',label:'Car Rentals',priority:'medium',color:'#0f172a',emoji:'🚗'},
+        {type:'bank',label:'Banks & ATMs',priority:'low',color:'#64748b',emoji:'🏦'},
+        {type:'atm',label:'ATMs',priority:'medium',color:'#6b7280',emoji:'💳'}
+      ]
+    };
+    
+    // Flatten for backward compatibility
+    const DEFAULT_POI_TYPES = Object.values(POI_CATEGORIES).flat();
 
     // Priority to weight mapping
     function getPriorityWeight(priority) {
@@ -597,31 +624,43 @@ def decrypt_key(encrypted_data, passphrase="default_salt_2024"):
     function buildPOIControls(){
       const list=document.getElementById('poiList'); list.innerHTML='';
       const legend=document.getElementById('poiLegend'); legend.innerHTML='<span class="me-2">Legend:</span>';
-      DEFAULT_POI_TYPES.forEach(t=>{
-        const div=document.createElement('div'); div.className='col-12';
-        div.innerHTML=`
-          <div class="poi-control-row">
-            <div class="poi-left-section">
-              <span class="poi-legend-dot" style="background:${t.color}"></span>
-              <div class="poi-switch">
-                <input class="form-check-input" type="checkbox" id="poi_ck_${t.type}" checked>
-                <label class="form-check-label" for="poi_ck_${t.type}">${t.emoji} ${t.label}</label>
+      
+      Object.entries(POI_CATEGORIES).forEach(([categoryName, poiTypes]) => {
+        // Add category header
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'col-12 mt-3 mb-2';
+        categoryHeader.innerHTML = `<h6 class="mb-2" style="color: var(--dubai-blue); font-weight: 600; border-bottom: 2px solid var(--dubai-teal); padding-bottom: 4px;">📍 ${categoryName}</h6>`;
+        list.appendChild(categoryHeader);
+        
+        // Add POI types in this category
+        poiTypes.forEach(t=>{
+          const div=document.createElement('div'); div.className='col-12';
+          div.innerHTML=`
+            <div class="poi-control-row">
+              <div class="poi-left-section">
+                <span class="poi-legend-dot" style="background:${t.color}"></span>
+                <div class="poi-switch">
+                  <input class="form-check-input" type="checkbox" id="poi_ck_${t.type}" checked>
+                  <label class="form-check-label" for="poi_ck_${t.type}">${t.emoji} ${t.label}</label>
+                </div>
               </div>
-            </div>
-            <div class="priority-section">
-              <div class="priority-label">Importance:</div>
-              <select id="poi_priority_${t.type}" class="priority-select priority-${t.priority}" onchange="updatePOIPriority('${t.type}', this.value)">
-                <option value="high" ${t.priority === 'high' ? 'selected' : ''}>🔴 High</option>
-                <option value="medium" ${t.priority === 'medium' ? 'selected' : ''}>🟡 Medium</option>
-                <option value="low" ${t.priority === 'low' ? 'selected' : ''}>🟢 Low</option>
-              </select>
-            </div>
-          </div>`;
-        list.appendChild(div);
-        const lg=document.createElement('span'); 
-        lg.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; margin-right: 16px; font-size: 13px; font-weight: 500;';
-        lg.innerHTML=`<span class="poi-legend-dot" style="background:${t.color}"></span>${t.emoji} ${t.label}`;
-        legend.appendChild(lg);
+              <div class="priority-section">
+                <div class="priority-label">Importance:</div>
+                <select id="poi_priority_${t.type}" class="priority-select priority-${t.priority}" onchange="updatePOIPriority('${t.type}', this.value)">
+                  <option value="high" ${t.priority === 'high' ? 'selected' : ''}>🔴 High</option>
+                  <option value="medium" ${t.priority === 'medium' ? 'selected' : ''}>🟡 Medium</option>
+                  <option value="low" ${t.priority === 'low' ? 'selected' : ''}>🟢 Low</option>
+                </select>
+              </div>
+            </div>`;
+          list.appendChild(div);
+          
+          // Add to legend
+          const lg=document.createElement('span'); 
+          lg.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; margin-right: 16px; font-size: 13px; font-weight: 500;';
+          lg.innerHTML=`<span class="poi-legend-dot" style="background:${t.color}"></span>${t.emoji} ${t.label}`;
+          legend.appendChild(lg);
+        });
       });
     }
 
@@ -682,10 +721,22 @@ def decrypt_key(encrypted_data, passphrase="default_salt_2024"):
       document.getElementById('btnScoreRetail').disabled = false;
       const sel = document.getElementById('poiCategory');
       sel.innerHTML = `<option value="" selected disabled>— choose a category —</option>`;
-      Object.keys(lastRetailResults||{}).forEach(k=>{
-        const meta = DEFAULT_POI_TYPES.find(z=>z.type===k);
-        const lbl = meta ? `${meta.emoji} ${meta.label}` : k;
-        sel.insertAdjacentHTML('beforeend', `<option value="${k}">${lbl} (${counts[k]||0})</option>`);
+      
+      // Group options by category
+      Object.entries(POI_CATEGORIES).forEach(([categoryName, poiTypes]) => {
+        const categoryPOIs = poiTypes.filter(poi => lastRetailResults && lastRetailResults[poi.type]);
+        if (categoryPOIs.length > 0) {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = `📍 ${categoryName}`;
+          categoryPOIs.forEach(poi => {
+            const count = counts[poi.type] || 0;
+            const option = document.createElement('option');
+            option.value = poi.type;
+            option.textContent = `${poi.emoji} ${poi.label} (${count})`;
+            optgroup.appendChild(option);
+          });
+          sel.appendChild(optgroup);
+        }
       });
       renderPOIFlatList();
     });
@@ -738,24 +789,35 @@ json.dumps(result)
           tr.innerHTML = `<td>${lbl}</td><td>${(+d.count).toFixed(0)}</td><td>${(+d.avg_rating).toFixed(2)}</td>`;
           tb.appendChild(tr);
         });
-        // Calculate score breakdown by priority
+        // Calculate score breakdown by categories
         let scoreBreakdown = '';
         let totalScore = 0;
         const priorityTotals = { high: 0, medium: 0, low: 0 };
         
-        DEFAULT_POI_TYPES.forEach(t => {
-          const ckEl = document.getElementById('poi_ck_' + t.type);
-          if (ckEl && ckEl.checked && lastRetailScan.counts && lastRetailScan.counts[t.type]) {
-            const count = lastRetailScan.counts[t.type] || 0;
-            const priority = t.priority;
-            const weight = getPriorityWeight(priority);
-            const contribution = count * weight;
-            totalScore += contribution;
-            priorityTotals[priority] += contribution;
-            
-            const priorityIcon = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢';
-            const priorityText = priority === 'high' ? 'High Importance' : priority === 'medium' ? 'Medium Importance' : 'Low Importance';
-            scoreBreakdown += `${t.emoji} ${t.label}: ${count > 0 ? `${count} facilities available nearby` : 'Limited availability in area'} (${priorityIcon} ${priorityText})\n`;
+        // Group amenities by categories
+        Object.entries(POI_CATEGORIES).forEach(([categoryName, poiTypes]) => {
+          let categoryHasAmenities = false;
+          let categoryBreakdown = `\n📍 ${categoryName.toUpperCase()}:\n`;
+          
+          poiTypes.forEach(t => {
+            const ckEl = document.getElementById('poi_ck_' + t.type);
+            if (ckEl && ckEl.checked && lastRetailScan.counts && lastRetailScan.counts[t.type]) {
+              const count = lastRetailScan.counts[t.type] || 0;
+              const priority = t.priority;
+              const weight = getPriorityWeight(priority);
+              const contribution = count * weight;
+              totalScore += contribution;
+              priorityTotals[priority] += contribution;
+              
+              const priorityIcon = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢';
+              const priorityText = priority === 'high' ? 'High' : priority === 'medium' ? 'Medium' : 'Low';
+              categoryBreakdown += `  ${t.emoji} ${t.label}: ${count > 0 ? `${count} available` : 'Limited'} (${priorityIcon} ${priorityText})\n`;
+              categoryHasAmenities = true;
+            }
+          });
+          
+          if (categoryHasAmenities) {
+            scoreBreakdown += categoryBreakdown;
           }
         });
         
@@ -921,19 +983,24 @@ json.dumps(result)
         alert('No POI data to export. Please scan an area first and select a category.');
         return;
       }
-      const header = ["#","Name","Address","Rating","Ratings Count","Type","Google Maps"];
+      const header = ["#","Name","Address","Rating","Ratings Count","Category","Type","Google Maps"];
       const csvRows = rows.map(r=>{
+        const poiMeta = DEFAULT_POI_TYPES.find(p => p.type === r.type);
+        const category = Object.entries(POI_CATEGORIES).find(([cat, types]) => 
+          types.some(t => t.type === r.type)
+        )?.[0] || 'Other';
         return [
           r.idx, r.name, r.address, 
           r.rating !== '' ? Number(r.rating).toFixed(1) : '',
           r.ratingCount || '',
-          r.type || '',
+          category,
+          poiMeta ? `${poiMeta.emoji} ${poiMeta.label}` : r.type || '',
           r.link || ''
         ];
       });
       const csv = [header.join(",")].concat(csvRows.map(r=>r.map(csvCell).join(","))).join("\n");
       const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
-      downloadBlob(`poi_export_${Date.now()}.csv`, blob);
+      downloadBlob(`tourism_export_${Date.now()}.csv`, blob);
     });
 
     document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
@@ -942,13 +1009,18 @@ json.dumps(result)
         alert('No POI data to export. Please scan an area first and select a category.');
         return;
       }
-      const data = [["#","Name","Address","Rating","Ratings Count","Type","Google Maps"]]
+      const data = [["#","Name","Address","Rating","Ratings Count","Category","Type","Google Maps"]]
         .concat(rows.map(r=>{
+          const poiMeta = DEFAULT_POI_TYPES.find(p => p.type === r.type);
+          const category = Object.entries(POI_CATEGORIES).find(([cat, types]) => 
+            types.some(t => t.type === r.type)
+          )?.[0] || 'Other';
           return [
             r.idx, r.name, r.address,
             r.rating !== '' ? Number(r.rating).toFixed(1) : '',
             r.ratingCount || '',
-            r.type || '',
+            category,
+            poiMeta ? `${poiMeta.emoji} ${poiMeta.label}` : r.type || '',
             r.link || ''
           ];
         }));
@@ -957,7 +1029,7 @@ json.dumps(result)
       XLSX.utils.book_append_sheet(wb, ws, "POI_Data");
       const ab = XLSX.write(wb, {bookType:'xlsx', type:'array'});
       const blob = new Blob([ab], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      downloadBlob(`poi_export_${Date.now()}.xlsx`, blob);
+      downloadBlob(`tourism_export_${Date.now()}.xlsx`, blob);
     });
 
     // ---------- OpenAI Chat System ----------
