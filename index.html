@@ -595,10 +595,64 @@ def decrypt_key(encrypted_data, passphrase="default_salt_2024"):
       document.getElementById('retailLimit').addEventListener('input',e=>document.getElementById('retailLimitLbl').textContent=e.target.value);
       buildPOIControls();
       document.getElementById('btnLocate2').addEventListener('click',()=>{
-        if(navigator.geolocation) navigator.geolocation.getCurrentPosition(pos=>{
-          const latlng={lat:pos.coords.latitude,lng:pos.coords.longitude};
-          map2.setCenter(latlng); map2.setZoom(15); setMarker2(latlng);
-        },()=>alert('Location unavailable'));
+        if(navigator.geolocation) {
+          // Show loading state
+          const btn = document.getElementById('btnLocate2');
+          const originalText = btn.textContent;
+          btn.textContent = '📍 Getting Location...';
+          btn.disabled = true;
+          
+          // High accuracy geolocation options
+          const options = {
+            enableHighAccuracy: true,    // Use GPS if available
+            timeout: 10000,              // 10 second timeout
+            maximumAge: 60000            // Accept cached location up to 1 minute old
+          };
+          
+          navigator.geolocation.getCurrentPosition(pos=>{
+            const latlng={lat:pos.coords.latitude,lng:pos.coords.longitude};
+            const accuracy = pos.coords.accuracy;
+            
+            // Log accuracy info for debugging
+            console.log(`Location accuracy: ${accuracy} meters`);
+            
+            map2.setCenter(latlng); 
+            map2.setZoom(accuracy > 100 ? 14 : 16); // Zoom based on accuracy
+            setMarker2(latlng);
+            
+            // Show accuracy info to user
+            if(accuracy > 500) {
+              alert(`Location found but accuracy is low (${Math.round(accuracy)}m). Consider enabling GPS or moving outdoors for better precision.`);
+            }
+            
+            // Restore button
+            btn.textContent = originalText;
+            btn.disabled = false;
+          }, (error) => {
+            let errorMsg = 'Location unavailable. ';
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMsg += 'Please allow location access in your browser.';
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMsg += 'Location information is unavailable.';
+                break;
+              case error.TIMEOUT:
+                errorMsg += 'Location request timed out. Try again.';
+                break;
+              default:
+                errorMsg += 'An unknown error occurred.';
+                break;
+            }
+            alert(errorMsg);
+            
+            // Restore button
+            btn.textContent = originalText;
+            btn.disabled = false;
+          }, options);
+        } else {
+          alert('Geolocation is not supported by this browser.');
+        }
       });
     }
     function setMarker2(latlng){
