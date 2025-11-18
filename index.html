@@ -341,15 +341,6 @@
             <div class="col-md-4"><div class="stat"><div class="label">Centers &amp; Filters</div><div id="retMeta" class="value small">—</div></div></div>
           </div>
 
-          <div class="table-responsive mt-3">
-            <table class="table table-sm">
-              <thead class="table-light">
-                <tr><th>Type</th><th>Count</th><th>Avg Rating</th></tr>
-              </thead>
-              <tbody id="retTableBody"></tbody>
-            </table>
-          </div>
-
           <pre id="retailBreakdown" class="form-control mono prewrap mt-2" style="min-height:110px;">—</pre>
         </div>
 
@@ -779,16 +770,7 @@ json.dumps(result)
         const obj = JSON.parse(result);
         document.getElementById('retRaw').textContent = (+obj.raw_score).toFixed(2);
         document.getElementById('retNorm').textContent = (+obj.normalized_score).toFixed(3);
-        const tb = document.getElementById('retTableBody'); tb.innerHTML='';
-        Object.entries(obj.detail).forEach(([t,d])=>{
-          const meta = DEFAULT_POI_TYPES.find(x=>x.type===t);
-          const lbl = meta ? `${meta.emoji} ${meta.label}` : t;
-          const tr = document.createElement('tr');
-          const poiMeta = DEFAULT_POI_TYPES.find(x=>x.type===t);
-          const priority = poiMeta ? poiMeta.priority : 'medium';
-          tr.innerHTML = `<td>${lbl}</td><td>${(+d.count).toFixed(0)}</td><td>${(+d.avg_rating).toFixed(2)}</td>`;
-          tb.appendChild(tr);
-        });
+
         // Calculate score breakdown by categories
         let scoreBreakdown = '';
         let totalScore = 0;
@@ -879,9 +861,7 @@ json.dumps(result)
         document.getElementById(id).textContent = '—'
       );
       
-      // Clear breakdown table and text
-      const tbody = document.getElementById('retTableBody');
-      if(tbody) tbody.innerHTML = '';
+      // Clear breakdown text
       document.getElementById('retailBreakdown').textContent = '—';
       
       // Clear location display
