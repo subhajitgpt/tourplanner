@@ -660,6 +660,38 @@ def decrypt_key(encrypted_data, passphrase="default_salt_2024"):
         icon:{ path:google.maps.SymbolPath.CIRCLE, scale:7, fillColor:t.color, fillOpacity:1, strokeColor:'#333', strokeWeight:0.5 },
         label:{ text:t.emoji, fontSize:'12px' }, title:t.label };
     }
+    // Filter function to improve beach search results
+    function filterBeachResults(results) {
+      return results.filter(place => {
+        const name = (place.name || '').toLowerCase();
+        const types = place.types || [];
+        
+        // Exclude obvious non-beach places
+        const excludeKeywords = [
+          'hotel', 'restaurant', 'cafe', 'club', 'bar', 'gym', 'spa', 'pool', 
+          'shopping', 'mall', 'store', 'office', 'hospital', 'bank', 'school',
+          'apartment', 'condo', 'resort', 'villa', 'room', 'suite'
+        ];
+        
+        // Exclude if name contains non-beach keywords
+        if (excludeKeywords.some(keyword => name.includes(keyword))) {
+          return false;
+        }
+        
+        // Exclude certain place types that are clearly not beaches
+        const excludeTypes = [
+          'lodging', 'restaurant', 'food', 'establishment', 'gym', 
+          'health', 'spa', 'shopping_mall', 'store', 'hospital', 'school'
+        ];
+        
+        if (excludeTypes.some(excludeType => types.includes(excludeType))) {
+          return false;
+        }
+        
+        return true;
+      });
+    }
+
     async function nearbySearchAllTypes(center, radius, limit){
       const openNowSel=document.getElementById('openNow').value;
       const openNow=openNowSel==='yes'?true:undefined;
@@ -670,7 +702,12 @@ def decrypt_key(encrypted_data, passphrase="default_salt_2024"):
           let out=[]; const req={location:center, radius:radius, type:t.type, openNow};
           placesService2.nearbySearch(req,(res,status,pag)=>{
             if(status===google.maps.places.PlacesServiceStatus.OK && res){
-              out=out.concat(res);
+              let filteredRes = res;
+              // Apply special filtering for beaches to remove irrelevant results
+              if (t.type === 'beach') {
+                filteredRes = filterBeachResults(res);
+              }
+              out=out.concat(filteredRes);
               if(pag && pag.hasNextPage && out.length<limit){ setTimeout(()=>pag.nextPage(),250); }
               else resolve(out.slice(0,limit));
             } else resolve(out);
